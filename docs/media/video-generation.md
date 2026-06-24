@@ -60,7 +60,13 @@ console.log('Job started:', jobId)
 ### Polling for Status
 
 ```typescript
-import { getVideoJobStatus } from '@tanstack/ai'
+import { generateVideo, getVideoJobStatus } from '@tanstack/ai'
+import { openaiVideo } from '@tanstack/ai-openai'
+
+const { jobId } = await generateVideo({
+  adapter: openaiVideo('sora-2'),
+  prompt: 'A golden retriever puppy playing in a field of sunflowers',
+})
 
 // Check the status of the job
 const status = await getVideoJobStatus({
@@ -80,6 +86,8 @@ if (status.status === 'failed') {
 
 ```typescript
 import { getVideoJobStatus } from '@tanstack/ai'
+import { openaiVideo } from '@tanstack/ai-openai'
+import { jobId } from './job'
 
 // Only call this after status is 'completed'
 const result = await getVideoJobStatus({
@@ -154,7 +162,7 @@ TanStack AI's `generateVideo` function supports a `stream: true` flag that handl
 
 **Server** — The server handles the entire polling lifecycle and streams events to the client:
 
-```typescript
+```typescript ignore
 // routes/api/generate/video.ts
 import { generateVideo, toServerSentEventsResponse } from '@tanstack/ai'
 import { openaiVideo } from '@tanstack/ai-openai'
@@ -244,7 +252,7 @@ function VideoGenerator() {
 
 For cases where the server handles the full polling loop and returns a completed result:
 
-```typescript
+```typescript ignore
 // lib/server-functions.ts
 import { createServerFn } from '@tanstack/react-start'
 import { generateVideo, getVideoJobStatus } from '@tanstack/ai'
@@ -298,7 +306,7 @@ function VideoGenerator() {
 
 For TanStack Start server functions that stream results. The fetcher receives type-safe input and returns an SSE `Response` — the client parses it automatically. This gives you both type safety and real-time `jobId`/`videoStatus` updates:
 
-```typescript
+```typescript ignore
 // lib/server-functions.ts
 import { createServerFn } from '@tanstack/react-start'
 import { generateVideo, toServerSentEventsResponse } from '@tanstack/ai'
@@ -379,6 +387,7 @@ generation, pass the `prompt` as an array of content parts:
 ```typescript
 import { generateVideo } from '@tanstack/ai'
 import { openaiVideo } from '@tanstack/ai-openai'
+import { base64Image } from './assets'
 
 const { jobId } = await generateVideo({
   adapter: openaiVideo('sora-2'),
@@ -426,7 +435,9 @@ adapter uses to route the input to the provider-specific field:
 | `'character'`   | Same as `'reference'` — character consistency images                    |
 
 ```typescript
+import { generateVideo } from '@tanstack/ai'
 import { falVideo } from '@tanstack/ai-fal'
+import { firstFrameUrl, lastFrameUrl } from './assets'
 
 await generateVideo({
   adapter: falVideo('fal-ai/kling-video/v3/pro/image-to-video'),
@@ -479,6 +490,9 @@ The API uses the `seconds` parameter. Allowed values:
 Based on the [OpenAI Sora API](https://platform.openai.com/docs/api-reference/videos/create):
 
 ```typescript
+import { generateVideo } from '@tanstack/ai'
+import { openaiVideo } from '@tanstack/ai-openai'
+
 const { jobId } = await generateVideo({
   adapter: openaiVideo('sora-2'),
   prompt: 'A beautiful sunset over the ocean',
@@ -496,14 +510,12 @@ const { jobId } = await generateVideo({
 Veo runs on Google's long-running operations API. The adapter starts the
 operation, and `getVideoJobStatus` polls it until the video is ready:
 
-```typescript
+```typescript ignore
 import { generateVideo } from '@tanstack/ai'
 import { geminiVideo } from '@tanstack/ai-gemini'
 
-const adapter = geminiVideo('veo-3.1-generate-preview')
-
 const { jobId } = await generateVideo({
-  adapter,
+  adapter: geminiVideo('veo-3.1-generate-preview'),
   prompt: 'A close-up of a luthier carving a guitar neck',
   size: '16:9', // aspect ratio: '16:9' or '9:16'
   duration: 8, // typed per model — see below
@@ -531,7 +543,10 @@ the `duration` option:
 If you have raw seconds (for example from a UI slider), coerce them with
 `snapDuration`, or inspect the full set with `availableDurations`:
 
-```typescript
+```typescript ignore
+import { generateVideo } from '@tanstack/ai'
+import { geminiVideo } from '@tanstack/ai-gemini'
+
 const adapter = geminiVideo('veo-3.0-generate-001')
 
 adapter.availableDurations() // { kind: 'discrete', values: [4, 6, 8] }
@@ -579,6 +594,8 @@ interface VideoStatusResult {
 ### VideoUrlResult (from url)
 
 ```typescript
+import type { TokenUsage } from '@tanstack/ai'
+
 interface VideoUrlResult {
   jobId: string
   url: string        // URL to download/stream the video
@@ -609,6 +626,9 @@ interface VideoUrlResult {
 Video generation can fail for various reasons. Always implement proper error handling:
 
 ```typescript
+import { generateVideo, getVideoJobStatus } from '@tanstack/ai'
+import { openaiVideo } from '@tanstack/ai-openai'
+
 try {
   const { jobId } = await generateVideo({
     adapter: openaiVideo('sora-2'),
@@ -626,12 +646,14 @@ try {
     // Handle failure (e.g., retry, notify user)
   }
 } catch (error) {
-  if (error.message.includes('Video generation API is not available')) {
-    console.error('Sora API access may be required. Check your OpenAI account.')
-  } else if (error.message.includes('rate limit')) {
-    console.error('Rate limited. Please wait before trying again.')
-  } else {
-    console.error('Unexpected error:', error)
+  if (error instanceof Error) {
+    if (error.message.includes('Video generation API is not available')) {
+      console.error('Sora API access may be required. Check your OpenAI account.')
+    } else if (error.message.includes('rate limit')) {
+      console.error('Rate limited. Please wait before trying again.')
+    } else {
+      console.error('Unexpected error:', error)
+    }
   }
 }
 ```

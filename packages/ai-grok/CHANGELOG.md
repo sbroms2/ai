@@ -1,5 +1,20 @@
 # @tanstack/ai-grok
 
+## 0.13.0
+
+### Minor Changes
+
+- [#812](https://github.com/TanStack/ai/pull/812) [`19fc1c7`](https://github.com/TanStack/ai/commit/19fc1c73ce5e228028d71f4fd3c3bf5d1aff4a13) - Migrate Grok text and summarize adapters to xAI's Responses API with support for grok-4.3, grok-build-0.1, reasoning options, structured output, function tools, and xAI server-side tools.
+
+## 0.12.4
+
+### Patch Changes
+
+- Updated dependencies [[`31de22b`](https://github.com/TanStack/ai/commit/31de22b1ae780c53e3abbf9cf17e1db7b62de84a), [`eddfbbd`](https://github.com/TanStack/ai/commit/eddfbbdfd979cad7874f0fb33695c5c41331631e)]:
+  - @tanstack/ai-utils@0.3.0
+  - @tanstack/ai@0.34.0
+  - @tanstack/openai-base@0.9.0
+
 ## 0.12.3
 
 ### Patch Changes
